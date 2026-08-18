@@ -52,28 +52,22 @@ function processTextNode(textNode) {
   if (!block) return;
   if (block.hasAttribute(MARK)) return;
 
-  // 定位"消息行"容器:向上走到列表边界(父元素子节点>3 或 body)前一层。
-  // 关键:绝不把图片插进消息列表容器/body——否则会变成列表末尾的游离元素,
-  // 把对话 UI 顶起来并产生滚动条(拖拽图片进输入框时文本直接挂在列表下的情况)。
-  var host = block;
-  var climbed = false;
-  for (var i = 0; i < 8; i++) {
-    var parent = host.parentElement;
-    if (!parent || parent === document.body) break;
-    if (parent.childElementCount > 3) break;
-    host = parent;
-    climbed = true;
-  }
-  if (!climbed || host === document.body) return; // 无可挂载的行容器 → 跳过
-  if (host.querySelector("[" + MARK + "]") !== null) return; // 该行已有预览
+  // 插入目标 = 文本块的直接父容器(气泡/文本容器)内部、文字上方。
+  // 防游离图片:文本直接挂在消息列表/body 下(拖拽图片进输入框的场景)时跳过,
+  // 绝不把图片插进列表容器。
+  var container = block.parentElement;
+  if (!container || container === document.body) return;
+  if (container.childElementCount > 3) return;
+  if (container.querySelector("[" + MARK + "]") !== null) return;
 
   block.setAttribute(MARK, "1");
+  // 倒序插入到文本块前,保证多图顺序正确;margin-left:auto 让图片在气泡内右对齐
   for (var j = matches.length - 1; j >= 0; j--) {
     var img = document.createElement("img");
     img.setAttribute(MARK, "1");
     img.src = ROUTE + "?p=" + encodeURIComponent(matches[j]);
     img.alt = "图片预览";
-    img.style.cssText = "max-width:min(360px,100%);max-height:420px;border-radius:8px;display:block;margin:4px 0 6px;object-fit:contain;cursor:zoom-in;";
+    img.style.cssText = "display:block;margin-left:auto;margin-right:0;max-width:min(360px,100%);max-height:420px;border-radius:8px;margin-top:4px;margin-bottom:6px;object-fit:contain;cursor:zoom-in;";
     img.addEventListener("error", function () {
       // 图片加载失败:移除自身,静默降级(块标记保留,避免无限重试)
       this.remove();
@@ -81,7 +75,7 @@ function processTextNode(textNode) {
     img.addEventListener("click", function () {
       openLightbox(this.src, this.alt);
     });
-    host.insertBefore(img, host.firstChild);
+    container.insertBefore(img, block);
   }
 }
 
