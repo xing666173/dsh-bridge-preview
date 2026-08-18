@@ -50,14 +50,25 @@ function processTextNode(textNode) {
 
   var block = textNode.parentElement;
   if (!block) return;
-  // 去重键 = 文本块自身:已处理过的块直接跳过(React 重建块后标记消失,会重新处理)
   if (block.hasAttribute(MARK)) return;
-  block.setAttribute(MARK, "1");
 
-  var container = block.parentElement;
-  if (!container) return;
-  var ref = block;
-  for (var j = 0; j < matches.length; j++) {
+  // 定位"消息行"容器:向上走到列表边界(父元素子节点>3 或 body)前一层。
+  // 关键:绝不把图片插进消息列表容器/body——否则会变成列表末尾的游离元素,
+  // 把对话 UI 顶起来并产生滚动条(拖拽图片进输入框时文本直接挂在列表下的情况)。
+  var host = block;
+  var climbed = false;
+  for (var i = 0; i < 8; i++) {
+    var parent = host.parentElement;
+    if (!parent || parent === document.body) break;
+    if (parent.childElementCount > 3) break;
+    host = parent;
+    climbed = true;
+  }
+  if (!climbed || host === document.body) return; // 无可挂载的行容器 → 跳过
+  if (host.querySelector("[" + MARK + "]") !== null) return; // 该行已有预览
+
+  block.setAttribute(MARK, "1");
+  for (var j = matches.length - 1; j >= 0; j--) {
     var img = document.createElement("img");
     img.setAttribute(MARK, "1");
     img.src = ROUTE + "?p=" + encodeURIComponent(matches[j]);
@@ -70,8 +81,7 @@ function processTextNode(textNode) {
     img.addEventListener("click", function () {
       openLightbox(this.src, this.alt);
     });
-    container.insertBefore(img, ref);
-    ref = img;
+    host.insertBefore(img, host.firstChild);
   }
 }
 
