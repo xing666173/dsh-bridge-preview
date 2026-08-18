@@ -62,14 +62,41 @@ function processTextNode(textNode) {
     img.setAttribute(MARK, "1");
     img.src = ROUTE + "?p=" + encodeURIComponent(matches[j]);
     img.alt = "图片预览";
-    img.style.cssText = "max-width:min(360px,100%);max-height:420px;border-radius:8px;display:block;margin:4px 0 6px;object-fit:contain;";
+    img.style.cssText = "max-width:min(360px,100%);max-height:420px;border-radius:8px;display:block;margin:4px 0 6px;object-fit:contain;cursor:zoom-in;";
     img.addEventListener("error", function () {
       // 图片加载失败:移除自身,静默降级(块标记保留,避免无限重试)
       this.remove();
     });
+    img.addEventListener("click", function () {
+      openLightbox(this.src, this.alt);
+    });
     container.insertBefore(img, ref);
     ref = img;
   }
+}
+
+/**
+ * 灯箱:点击缩略图 → 全屏大图;点任意处或按 Esc 关闭。
+ */
+function openLightbox(src, alt) {
+  var overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:2147483000;cursor:zoom-out;";
+  var big = document.createElement("img");
+  big.src = src;
+  big.alt = alt || "图片预览";
+  big.style.cssText = "max-width:92vw;max-height:92vh;object-fit:contain;border-radius:4px;box-shadow:0 8px 40px rgba(0,0,0,0.5);";
+  var close = function () {
+    overlay.remove();
+    document.removeEventListener("keydown", onKey, true);
+  };
+  var onKey = function (e) {
+    if (e.key === "Escape") close();
+  };
+  big.addEventListener("error", close);
+  overlay.addEventListener("click", close);
+  overlay.appendChild(big);
+  document.body.appendChild(overlay);
+  document.addEventListener("keydown", onKey, true);
 }
 
 function scan() {
