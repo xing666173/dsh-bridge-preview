@@ -1,6 +1,6 @@
 {
   "name": "dsh-bridge-preview",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "为 dsh-tool-vision 桥接导出的图片提供对话内联预览:用户粘贴的图片在气泡中显示缩略图,不改变桥接文本与模型行为",
   "type": "module",
   "main": "index.js",
